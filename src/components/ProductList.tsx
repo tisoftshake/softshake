@@ -6,6 +6,7 @@ import { FlavorSelectionModal } from './FlavorSelectionModal';
 import { AcaiToppingsModal } from './AcaiToppingsModal';
 import { CakeCustomizationModal } from './CakeCustomizationModal';
 import { DrinkSelectionModal } from './DrinkSelectionModal';
+import { IceCreamCakeModal } from './IceCreamCakeModal';
 
 interface Product {
   id: string;
@@ -45,6 +46,18 @@ interface DrinkVariation {
   in_stock: boolean;
 }
 
+interface IceCreamFlavor {
+  id: string;
+  name: string;
+  in_stock: boolean;
+}
+
+interface IceCreamFilling {
+  id: string;
+  name: string;
+  in_stock: boolean;
+}
+
 interface ProductListProps {
   products: Product[];
 }
@@ -60,6 +73,9 @@ export function ProductList({ products }: ProductListProps) {
   const [showDrinkModal, setShowDrinkModal] = useState(false);
   const [showToppingsModal, setShowToppingsModal] = useState(false);
   const [showCakeModal, setShowCakeModal] = useState(false);
+  const [showIceCreamCakeModal, setShowIceCreamCakeModal] = useState(false);
+  const [iceCreamFlavors, setIceCreamFlavors] = useState<IceCreamFlavor[]>([]);
+  const [iceCreamFillings, setIceCreamFillings] = useState<IceCreamFilling[]>([]);
 
   const handleProductClick = async (product: Product) => {
     if (!product.in_stock) return;
@@ -111,6 +127,22 @@ export function ProductList({ products }: ProductListProps) {
       
       setCakeFlavors(cakeData || []);
       setShowCakeModal(true);
+    } else if (product.name.toLowerCase().includes('sorvete')) {
+      // Load ice cream flavors and fillings
+      const [flavorsResponse, fillingsResponse] = await Promise.all([
+        supabase
+          .from('ice_cream_flavors')
+          .select('id, name, in_stock')
+          .order('name'),
+        supabase
+          .from('ice_cream_fillings')
+          .select('id, name, in_stock')
+          .order('name')
+      ]);
+      
+      setIceCreamFlavors(flavorsResponse.data || []);
+      setIceCreamFillings(fillingsResponse.data || []);
+      setShowIceCreamCakeModal(true);
     } else {
       // Load regular flavors
       const { data: flavorsData } = await supabase
@@ -125,51 +157,36 @@ export function ProductList({ products }: ProductListProps) {
   };
 
   const handleFlavorSelection = (selectedFlavors: string[]) => {
-    if (selectedProduct && selectedFlavors.length > 0) {
-      const selectedFlavorNames = flavors
-        .filter(flavor => selectedFlavors.includes(flavor.id))
-        .map(flavor => flavor.name)
-        .join(', ');
-
+    if (selectedProduct) {
       addItem({
-        ...selectedProduct,
-        name: `${selectedProduct.name} (${selectedFlavorNames})`
+        id: selectedProduct.id,
+        name: selectedProduct.name,
+        price: selectedProduct.price,
+        quantity: 1,
+        flavors: selectedFlavors,
+        image_url: selectedProduct.image_url
       });
+      setShowFlavorModal(false);
     }
   };
 
-  const handleToppingsSelection = (selectedToppings: string[]) => {
-    if (selectedProduct && selectedToppings.length >= 0) {
-      const selectedToppingNames = toppings
-        .filter(topping => selectedToppings.includes(topping.id))
-        .map(topping => topping.name)
-        .join(', ');
-
-      const additionalCost = toppings
-        .filter(topping => selectedToppings.includes(topping.id))
-        .reduce((sum, topping) => sum + topping.price, 0);
-
+  const handleToppingsSelection = (selectedToppings: AcaiTopping[]) => {
+    if (selectedProduct) {
+      const toppingsPrice = selectedToppings.reduce(
+        (total, topping) => total + topping.price,
+        0
+      );
+      
       addItem({
-        ...selectedProduct,
-        name: selectedToppingNames 
-          ? `${selectedProduct.name} (${selectedToppingNames})`
-          : selectedProduct.name,
-        price: selectedProduct.price + additionalCost
+        id: selectedProduct.id,
+        name: selectedProduct.name,
+        price: selectedProduct.price + toppingsPrice,
+        quantity: 1,
+        toppings: selectedToppings,
+        size: selectedProduct.size,
+        image_url: selectedProduct.image_url
       });
-    }
-  };
-
-  const handleDrinkSelection = (selectedVariation: string) => {
-    if (selectedProduct && selectedVariation) {
-      const selectedVariationData = drinkVariations.find(variation => variation.id === selectedVariation);
-
-      if (selectedVariationData) {
-        addItem({
-          ...selectedProduct,
-          name: `${selectedProduct.name} (${selectedVariationData.name})`,
-          price: selectedProduct.price + selectedVariationData.price
-        });
-      }
+      setShowToppingsModal(false);
     }
   };
 
@@ -187,22 +204,19 @@ export function ProductList({ products }: ProductListProps) {
         .map(f => f.name)
         .join(', ');
 
-      const pickupDate = new Date(selections.pickupDate);
-      const formattedDate = pickupDate.toLocaleDateString('pt-BR');
-
-      const description = [
-        `Sabor: ${selectedFlavorName}`,
-        selections.fillings.length > 0 && `Recheios: ${selectedFillingNames}`,
-        `Cliente: ${selections.customerName}`,
-        `Telefone: ${selections.customerPhone}`,
-        `Data de Retirada: ${formattedDate}`
-      ].filter(Boolean).join('\n');
-
       addItem({
-        ...selectedProduct,
-        name: `${selectedProduct.name} (${selectedFlavorName})`,
-        description
+        id: selectedProduct.id,
+        name: selectedProduct.name,
+        price: selectedProduct.price,
+        quantity: 1,
+        flavor: selectedFlavorName,
+        fillings: selectedFillingNames,
+        customerName: selections.customerName,
+        customerPhone: selections.customerPhone,
+        pickupDate: selections.pickupDate,
+        image_url: selectedProduct.image_url
       });
+      setShowCakeModal(false);
     }
   };
 
@@ -328,6 +342,32 @@ export function ProductList({ products }: ProductListProps) {
           product={selectedProduct}
           flavors={cakeFlavors}
           onConfirm={handleCakeCustomization}
+        />
+      )}
+
+      {selectedProduct && showIceCreamCakeModal && (
+        <IceCreamCakeModal
+          isOpen={true}
+          onClose={() => {
+            setShowIceCreamCakeModal(false);
+            setSelectedProduct(null);
+          }}
+          onConfirm={(selectedFlavors, selectedFilling, deliveryDate) => {
+            console.log('Data recebida:', deliveryDate); // Debug
+            const item = {
+              id: selectedProduct.id,
+              name: `${selectedProduct.name} (${selectedFlavors.join(' + ')}) - Recheio: ${selectedFilling}`,
+              price: selectedProduct.price,
+              quantity: 1,
+              flavors: selectedFlavors,
+              filling: selectedFilling,
+              image_url: selectedProduct.image_url,
+              deliveryDate: deliveryDate.toISOString()
+            };
+            console.log('Item a ser adicionado:', item); // Debug
+            addItem(item);
+            setShowIceCreamCakeModal(false);
+          }}
         />
       )}
     </>

@@ -10,6 +10,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { StockManagement } from './pages/StockManagement';
 import { supabase } from './lib/supabase';
+import { Toaster } from 'react-hot-toast';
 
 interface Category {
   id: string;
@@ -94,6 +95,7 @@ function App() {
     <Router>
       <NotificationProvider>
         <CartProvider>
+          <Toaster />
           <Routes>
             <Route
               path="/"

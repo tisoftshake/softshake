@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Minus, Plus, ShoppingBag, Truck, Store } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 interface CheckoutForm {
   name: string;
@@ -30,6 +31,12 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     setIsSubmitting(true);
 
     try {
+      // Encontrar a data de entrega mais próxima dos bolos
+      const deliveryDate = items
+        .filter(item => item.deliveryDate)
+        .map(item => new Date(item.deliveryDate))
+        .sort((a, b) => a.getTime() - b.getTime())[0];
+
       const { data, error } = await supabase
         .from('orders')
         .insert([
@@ -40,7 +47,8 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             delivery_address: form.address,
             items: items,
             total_amount: finalTotal,
-            status: 'pending'
+            status: 'pending',
+            delivery_date: deliveryDate?.toISOString().split('T')[0]
           }
         ])
         .select();
@@ -49,9 +57,31 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
       clearCart();
       onClose();
-      alert('Pedido realizado com sucesso!');
+      toast.success('Pedido enviado com sucesso!', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: 'linear-gradient(to right, #9333ea, #eab308)',
+          color: 'white',
+          fontWeight: 'bold',
+          padding: '16px',
+          borderRadius: '12px',
+        },
+        icon: '🎉'
+      });
     } catch (error) {
-      alert('Erro ao realizar pedido. Tente novamente.');
+      console.error('Erro ao enviar pedido:', error);
+      toast.error('Erro ao enviar o pedido. Tente novamente.', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: 'white',
+          fontWeight: 'bold',
+          padding: '16px',
+          borderRadius: '12px',
+        }
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -82,18 +112,32 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <>
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {items.map(item => (
-                <div key={item.id} className="flex gap-3 sm:gap-4 bg-gradient-to-r from-purple-50 to-yellow-50 p-3 sm:p-4 rounded-xl">
-                  <img 
-                    src={item.image_url} 
-                    alt={item.name}
-                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-base sm:text-lg">{item.name}</h3>
-                    <p className="text-purple-500 font-semibold mt-0.5 sm:mt-1 text-sm sm:text-base">
-                      R$ {item.price.toFixed(2)}
-                    </p>
-                    <div className="flex items-center gap-2 sm:gap-3 mt-2 sm:mt-3">
+                <div key={item.id} className="flex items-start gap-4 py-4">
+                  <div className="w-20 h-20 rounded-lg overflow-hidden">
+                    <img 
+                      src={item.image_url} 
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-base font-medium text-gray-900 truncate">{item.name}</h4>
+                    {item.flavors && item.filling && (
+                      <div className="mt-1 text-sm text-gray-500">
+                        <p>Sabores: {item.flavors.join(' + ')}</p>
+                        <p>Recheio: {item.filling}</p>
+                        {item.deliveryDate && (
+                          <p className="text-purple-600 font-medium mt-1">
+                            Entrega: {new Date(item.deliveryDate).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center gap-4">
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         className="p-1 hover:bg-purple-100 rounded-full transition-colors"
@@ -232,51 +276,52 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 }
 
 function PrintLayout({ order }: { order: any }) {
-  const DELIVERY_FEE = 2;
-  const finalAmount = order.delivery_type === 'delivery' 
-    ? order.total_amount + DELIVERY_FEE 
-    : order.total_amount;
-
   return (
-    <div className="print-layout hidden print:block p-4">
-      <div className="text-center mb-6">
+    <div className="print-layout hidden print:block">
+      <div className="text-center mb-4">
         <h1 className="text-3xl font-bold mb-2">SoftShake</h1>
         <p className="text-base">================================</p>
-        <p className="text-lg mt-3">PEDIDO #{order.id.slice(0, 8)}</p>
-        <p className="text-base mt-1">{new Date(order.created_at).toLocaleString('pt-BR')}</p>
+        <p className="text-xl mt-2">PEDIDO #{order.id.slice(0, 8)}</p>
+        <p className="text-base">{new Date(order.created_at).toLocaleString('pt-BR')}</p>
       </div>
 
-      <div className="mb-6">
-        <p className="uppercase font-bold text-lg mb-2">CLIENTE</p>
-        <p className="text-base mb-1">Nome: {order.customer_name}</p>
-        <p className="text-base mb-1">Tel: {order.customer_phone}</p>
-        <p className="text-base mb-1">Tipo: {order.delivery_type === 'delivery' ? 'Entrega' : 'Retirada'}</p>
+      <div className="mb-4">
+        <p className="uppercase font-bold text-lg">CLIENTE</p>
+        <p className="text-base">Nome: {order.customer_name}</p>
+        <p className="text-base">Tel: {order.customer_phone}</p>
+        <p className="text-base">Tipo: {order.delivery_type === 'delivery' ? 'Entrega' : 'Retirada'}</p>
         {order.delivery_address && (
           <p className="text-base">End: {order.delivery_address}</p>
+        )}
+        {order.delivery_date && (
+          <p className="text-base font-medium text-purple-700">
+            *** Data de Entrega: {new Date(order.delivery_date).toLocaleDateString('pt-BR')} ***
+          </p>
         )}
       </div>
 
       <p className="text-base">================================</p>
-      <p className="my-3 font-bold text-lg">ITENS DO PEDIDO</p>
+      <p className="my-2 font-bold text-lg">ITENS DO PEDIDO</p>
       <p className="text-base">================================</p>
 
-      <div className="space-y-4 my-4">
-        {order.items.map((item, index) => (
-          <div key={index}>
-            <div className="flex justify-between text-base">
-              <span>{item.quantity}x {item.name}</span>
-              <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
-            </div>
-            {item.description && (
-              <p className="text-sm ml-4 mt-1">{item.description}</p>
-            )}
+      {order.items.map((item: any, index: number) => (
+        <div key={index} className="mb-3">
+          <div className="flex justify-between text-base">
+            <span>{item.quantity}x {item.name}</span>
+            <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
           </div>
-        ))}
-      </div>
+          {item.flavors && item.filling && (
+            <div className="text-sm ml-4">
+              <p>Sabores: {item.flavors.join(' + ')}</p>
+              <p>Recheio: {item.filling}</p>
+            </div>
+          )}
+        </div>
+      ))}
 
       <p className="text-base">================================</p>
       
-      <div className="mt-4 space-y-2">
+      <div className="mt-2">
         <div className="flex justify-between text-base">
           <span>Subtotal:</span>
           <span>R$ {order.total_amount.toFixed(2)}</span>
@@ -287,16 +332,18 @@ function PrintLayout({ order }: { order: any }) {
             <span>R$ {DELIVERY_FEE.toFixed(2)}</span>
           </div>
         )}
-        <p className="text-base pt-2">================================</p>
+        <p className="text-base">================================</p>
         <div className="flex justify-between font-bold text-xl">
           <span>TOTAL:</span>
-          <span>R$ {finalAmount.toFixed(2)}</span>
+          <span>R$ {(order.delivery_type === 'delivery' ? order.total_amount + DELIVERY_FEE : order.total_amount).toFixed(2)}</span>
         </div>
       </div>
 
-      <div className="mt-8 text-center">
+      <div className="mt-6 text-center">
         <p className="text-sm mb-1">*** Obrigado pela preferência! ***</p>
         <p className="text-sm">www.softshake.com.br</p>
+        <p className="text-sm mt-4">{new Date().toLocaleString('pt-BR')}</p>
+        <p className="mt-4">--------------------------------</p>
       </div>
     </div>
   );

@@ -6,6 +6,13 @@ interface CartItem {
   price: number;
   quantity: number;
   image_url: string;
+  flavors?: string[];
+  filling?: string;
+  deliveryDate?: string;
+}
+
+interface Product extends CartItem {
+  description?: string;
 }
 
 interface CartContextType {
@@ -37,7 +44,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         name: product.name, 
         price: product.price, 
         quantity: 1,
-        image_url: product.image_url
+        image_url: product.image_url,
+        flavors: product.flavors,
+        filling: product.filling,
+        deliveryDate: product.deliveryDate
       }];
     });
   };

@@ -18,7 +18,6 @@ interface SalesReport {
       total_amount: number;
       items: any[];
       created_at: string;
-      status: string;
     }>;
     summary: {
       totalSales: number;
@@ -59,7 +58,7 @@ export function ReportsTab() {
 
       // Buscar pedidos novos do mês atual
       const { data: currentOrders, error: ordersError } = await supabase
-        .from('orders')
+        .from('deleted_orders')
         .select('*')
         .gte('created_at', startOfMonth.toISOString())
         .lte('created_at', endOfMonth.toISOString());
@@ -126,50 +125,117 @@ export function ReportsTab() {
 
     const doc = new jsPDF();
     
-    // Cabeçalho
-    doc.setFontSize(20);
-    doc.text('SoftShake - Relatório de Vendas', 14, 20);
+    // Definir cores e estilos
+    const primaryColor = [102, 51, 153];     // Roxo
+    const secondaryColor = [218, 165, 32];   // Dourado
+    const textColor = [72, 36, 108];         // Roxo escuro para texto
+    const lightPurple = [242, 240, 250];     // Roxo claro para backgrounds
     
-    doc.setFontSize(12);
-    doc.text(`Período: ${currentReport.month} ${currentReport.year}`, 14, 30);
+    // Cabeçalho com logo e título
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F');
     
-    // Resumo
+    // Detalhe dourado no cabeçalho
+    doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.rect(0, 40, doc.internal.pageSize.width, 2, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.text('SoftShake', 14, 20);
     doc.setFontSize(14);
-    doc.text('Resumo', 14, 40);
+    doc.text('Relatório de Vendas', 14, 32);
     
-    const summaryData = [
-      ['Total de Vendas', `R$ ${currentReport.total_sales.toFixed(2)}`],
-      ['Total de Pedidos', currentReport.total_orders.toString()],
-      ['Ticket Médio', `R$ ${(currentReport.total_sales / currentReport.total_orders || 0).toFixed(2)}`]
+    // Informações do período
+    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.setFontSize(14);
+    doc.text(`${currentReport.month} ${currentReport.year}`, 14, 60);
+    
+    // Cards de métricas principais
+    const metrics = [
+      { label: 'Total de Vendas', value: `R$ ${currentReport.total_sales.toFixed(2)}` },
+      { label: 'Total de Pedidos', value: currentReport.total_orders.toString() },
+      { label: 'Ticket Médio', value: `R$ ${(currentReport.total_sales / currentReport.total_orders || 0).toFixed(2)}` }
     ];
     
-    (doc as any).autoTable({
-      startY: 45,
-      head: [['Métrica', 'Valor']],
-      body: summaryData,
-      theme: 'grid',
-      headStyles: { fillColor: [66, 139, 202] }
+    let startY = 75;
+    metrics.forEach((metric, index) => {
+      const x = 14 + (index * 65);
+      
+      // Card background com borda dourada
+      doc.setFillColor(...lightPurple);
+      doc.setDrawColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+      doc.roundedRect(x, startY, 60, 40, 3, 3, 'FD');
+      
+      // Metric value
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setFontSize(14);
+      doc.text(metric.value, x + 5, startY + 15);
+      
+      // Metric label
+      doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+      doc.setFontSize(10);
+      doc.text(metric.label, x + 5, startY + 30);
     });
     
-    // Lista de Pedidos
-    doc.text('Pedidos do Período', 14, (doc as any).lastAutoTable.finalY + 20);
+    // Tabela de pedidos
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setFontSize(14);
+    doc.text('Detalhamento dos Pedidos', 14, startY + 60);
     
     const ordersData = currentReport.report_data.orders.map(order => [
       order.id.slice(0, 8),
       order.customer_name,
       `R$ ${order.total_amount.toFixed(2)}`,
-      new Date(order.created_at).toLocaleDateString('pt-BR'),
-      order.status
+      new Date(order.created_at).toLocaleDateString('pt-BR')
     ]);
     
     (doc as any).autoTable({
-      startY: (doc as any).lastAutoTable.finalY + 25,
-      head: [['ID', 'Cliente', 'Valor', 'Data', 'Status']],
+      startY: startY + 65,
+      head: [['ID', 'Cliente', 'Valor', 'Data']],
       body: ordersData,
       theme: 'grid',
-      headStyles: { fillColor: [66, 139, 202] },
-      styles: { fontSize: 8 }
+      headStyles: { 
+        fillColor: primaryColor,
+        fontSize: 12,
+        fontStyle: 'bold',
+        halign: 'left',
+        textColor: [255, 255, 255]
+      },
+      styles: { 
+        fontSize: 10,
+        cellPadding: 5,
+        textColor: textColor,
+        lineColor: [218, 165, 32],
+        lineWidth: 0.1
+      },
+      alternateRowStyles: {
+        fillColor: lightPurple
+      },
+      columnStyles: {
+        2: { // Coluna de valor
+          textColor: secondaryColor,
+          fontStyle: 'bold'
+        }
+      }
     });
+    
+    // Rodapé com detalhe dourado
+    doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.rect(0, doc.internal.pageSize.height - 20, doc.internal.pageSize.width, 1, 'F');
+    
+    // Texto do rodapé
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    doc.setFontSize(8);
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.text(
+        `Página ${i} de ${pageCount} | Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      );
+    }
     
     doc.save(`relatorio-vendas-${currentReport.month}-${currentReport.year}.pdf`);
   };
@@ -280,7 +346,6 @@ export function ReportsTab() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -297,9 +362,6 @@ export function ReportsTab() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(order.created_at).toLocaleDateString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {order.status}
                       </td>
                     </tr>
                   ))}

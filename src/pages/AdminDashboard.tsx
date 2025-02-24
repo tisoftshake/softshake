@@ -25,10 +25,20 @@ interface Order {
   customer_phone: string;
   delivery_type: 'pickup' | 'delivery';
   delivery_address?: string;
-  items: any[];
+  items: {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    description?: string;
+    flavors?: string[];
+    filling?: string;
+    deliveryDate?: Date;
+  }[];
   total_amount: number;
   status: 'pending' | 'accepted' | 'preparing' | 'delivering' | 'completed';
   created_at: string;
+  delivery_date?: string;
 }
 
 interface OrderDetailsModalProps {
@@ -61,6 +71,11 @@ function PrintLayout({ order }: { order: Order }) {
         {order.delivery_address && (
           <p className="text-base">End: {order.delivery_address}</p>
         )}
+        {order.delivery_date && (
+          <p className="text-base font-medium text-purple-700">
+            *** Data de Entrega: {new Date(order.delivery_date).toLocaleDateString('pt-BR')} ***
+          </p>
+        )}
       </div>
 
       <p className="text-base">================================</p>
@@ -75,6 +90,12 @@ function PrintLayout({ order }: { order: Order }) {
           </div>
           {item.description && (
             <p className="text-sm ml-4">{item.description}</p>
+          )}
+          {item.flavors && item.filling && (
+            <div className="text-sm ml-4">
+              <p>Sabores: {item.flavors.join(' + ')}</p>
+              <p>Recheio: {item.filling}</p>
+            </div>
           )}
         </div>
       ))}
@@ -163,8 +184,13 @@ function OrderDetailsModal({ order, onClose, onUpdateStatus }: OrderDetailsModal
                 <p className="text-sm text-gray-500 mt-1">
                   {new Date(order.created_at).toLocaleString('pt-BR')}
                 </p>
+                {order.delivery_date && (
+                  <p className="text-sm font-medium text-purple-600 mt-1">
+                    Data de Entrega: {new Date(order.delivery_date).toLocaleDateString('pt-BR')}
+                  </p>
+                )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handlePrint}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -199,36 +225,59 @@ function OrderDetailsModal({ order, onClose, onUpdateStatus }: OrderDetailsModal
           <div className="p-6 space-y-6">
             <div>
               <h3 className="font-medium text-gray-900 mb-3">Informações do Cliente</h3>
-              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                <p><span className="font-medium">Nome:</span> {order.customer_name}</p>
-                <p><span className="font-medium">Telefone:</span> {order.customer_phone}</p>
-                <p>
-                  <span className="font-medium">Tipo de Entrega:</span>{' '}
-                  {order.delivery_type === 'delivery' ? 'Entrega' : 'Retirada'}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-gray-600">Nome: <span className="text-gray-900">{order.customer_name}</span></p>
+                <p className="text-gray-600">Telefone: <span className="text-gray-900">{order.customer_phone}</span></p>
+                <p className="text-gray-600">
+                  Tipo de Entrega: 
+                  <span className="text-gray-900 ml-1">
+                    {order.delivery_type === 'delivery' ? 'Entrega' : 'Retirada'}
+                  </span>
                 </p>
                 {order.delivery_address && (
-                  <p><span className="font-medium">Endereço:</span> {order.delivery_address}</p>
+                  <p className="text-gray-600">
+                    Endereço: <span className="text-gray-900">{order.delivery_address}</span>
+                  </p>
                 )}
               </div>
             </div>
 
             <div>
               <h3 className="font-medium text-gray-900 mb-3">Itens do Pedido</h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {order.items.map((item, index) => (
-                  <div key={index} className="bg-gray-50 rounded-xl p-4 flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{item.quantity}x</span>
-                        <span className="font-medium">{item.name}</span>
+                  <div key={index} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-gray-900">{item.quantity}x {item.name}</p>
+                        {item.description && (
+                          <p className="text-gray-600 text-sm mt-1">{item.description}</p>
+                        )}
+                        {item.flavors && item.filling && (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-gray-600 text-sm">
+                              <span className="font-medium">Sabores:</span> {item.flavors.join(' + ')}
+                            </p>
+                            <p className="text-gray-600 text-sm">
+                              <span className="font-medium">Recheio:</span> {item.filling}
+                            </p>
+                            {item.deliveryDate && (
+                              <p className="text-purple-600 text-sm font-medium mt-2 flex items-center">
+                                <Clock className="w-4 h-4 mr-1" />
+                                Entrega agendada: {new Date(item.deliveryDate).toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {item.description && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          {item.description}
-                        </p>
-                      )}
+                      <p className="font-medium text-gray-900">
+                        R$ {(item.price * item.quantity).toFixed(2)}
+                      </p>
                     </div>
-                    <p className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -335,10 +384,19 @@ export function AdminDashboard() {
   async function fetchOrders() {
     const { data } = await supabase
       .from('orders')
-      .select('*')
+      .select('*, delivery_date')
       .order('created_at', { ascending: false });
     
-    setOrders(data || []);
+    if (data) {
+      // Garantir que as datas estejam no formato correto
+      const formattedOrders = data.map(order => ({
+        ...order,
+        delivery_date: order.delivery_date ? new Date(order.delivery_date).toISOString().split('T')[0] : undefined
+      }));
+      setOrders(formattedOrders);
+    } else {
+      setOrders([]);
+    }
   }
 
   async function updateOrderStatus(orderId: string, newStatus: Order['status']) {
