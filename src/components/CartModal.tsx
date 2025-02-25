@@ -3,6 +3,7 @@ import { X, Minus, Plus, ShoppingBag, Truck, Store } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { ScrollingText } from './ScrollingText';
 
 interface CheckoutForm {
   name: string;
@@ -112,53 +113,72 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <>
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {items.map(item => (
-                <div key={item.id} className="flex items-start gap-4 py-4">
-                  <div className="w-20 h-20 rounded-lg overflow-hidden">
-                    <img 
-                      src={item.image_url} 
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-base font-medium text-gray-900 truncate">{item.name}</h4>
-                    {item.flavors && item.filling && (
-                      <div className="mt-1 text-sm text-gray-500">
-                        <p>Sabores: {item.flavors.join(' + ')}</p>
-                        <p>Recheio: {item.filling}</p>
-                        {item.deliveryDate && (
-                          <p className="text-purple-600 font-medium mt-1">
-                            Entrega: {new Date(item.deliveryDate).toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric'
-                            })}
-                          </p>
-                        )}
-                      </div>
+                <div key={item.id} className="flex gap-4 py-4 border-b">
+                  <img
+                    src={item.image_url}
+                    alt={item.name}
+                    className="w-20 h-20 object-cover rounded-lg"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-medium">
+                      {item.name}
+                      {item.toppings && item.toppings.length > 0 && (
+                        <span className="font-normal text-gray-600">
+                          {" "}({item.toppings.map(t => t.name).join(', ')})
+                        </span>
+                      )}
+                    </h3>
+                    {item.flavors && (
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Sabores:</span> {item.flavors.join(', ')}
+                      </p>
                     )}
-                    <div className="mt-2 flex items-center gap-4">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="p-1 hover:bg-purple-100 rounded-full transition-colors"
-                      >
-                        <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      </button>
-                      <span className="w-6 sm:w-8 text-center font-medium text-sm sm:text-base">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="p-1 hover:bg-purple-100 rounded-full transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      </button>
+                    {item.filling && (
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Recheio:</span> {item.filling}
+                      </p>
+                    )}
+                    {item.deliveryDate && (
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Data de Entrega:</span>{' '}
+                        {new Date(item.deliveryDate).toLocaleDateString('pt-BR')}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                          disabled={item.quantity <= 1}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-8 text-center">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="font-medium">
+                            {item.quantity}x R$ {(item.price + (item.toppings?.reduce((sum, t) => sum + t.price, 0) || 0)).toFixed(2)}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Total: R$ {((item.price + (item.toppings?.reduce((sum, t) => sum + t.price, 0) || 0)) * item.quantity).toFixed(2)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="p-1 hover:bg-gray-100 rounded-full transition-colors text-red-500"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="p-1.5 sm:p-2 hover:bg-purple-100 rounded-full text-gray-400 hover:text-red-500 transition-colors self-start"
-                  >
-                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
                 </div>
               ))}
             </div>

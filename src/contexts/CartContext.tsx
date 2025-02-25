@@ -9,6 +9,11 @@ interface CartItem {
   flavors?: string[];
   filling?: string;
   deliveryDate?: string;
+  toppings?: Array<{
+    id: string;
+    name: string;
+    price: number;
+  }>;
 }
 
 interface Product extends CartItem {
@@ -20,6 +25,7 @@ interface CartContextType {
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  updateItem: (updatedItem: CartItem) => void;
   clearCart: () => void;
   total: number;
 }
@@ -31,14 +37,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = (product: Product) => {
     setItems(currentItems => {
-      const existingItem = currentItems.find(item => item.id === product.id);
+      const existingItem = currentItems.find(item => 
+        item.id === product.id && 
+        JSON.stringify(item.toppings) === JSON.stringify(product.toppings)
+      );
+      
       if (existingItem) {
         return currentItems.map(item =>
-          item.id === product.id
+          item.id === product.id && 
+          JSON.stringify(item.toppings) === JSON.stringify(product.toppings)
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
+      
       return [...currentItems, { 
         id: product.id, 
         name: product.name, 
@@ -47,7 +59,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         image_url: product.image_url,
         flavors: product.flavors,
         filling: product.filling,
-        deliveryDate: product.deliveryDate
+        deliveryDate: product.deliveryDate,
+        toppings: product.toppings
       }];
     });
   };
@@ -65,14 +78,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const updateItem = (updatedItem: CartItem) => {
+    setItems(currentItems =>
+      currentItems.map(item =>
+        item.id === updatedItem.id ? updatedItem : item
+      )
+    );
+  };
+
   const clearCart = () => {
     setItems([]);
   };
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = items.reduce((sum, item) => {
+    const itemBasePrice = item.price;
+    const toppingsPrice = item.toppings?.reduce((tSum, topping) => tSum + topping.price, 0) || 0;
+    const itemTotalPrice = (itemBasePrice + toppingsPrice) * item.quantity;
+    return sum + itemTotalPrice;
+  }, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total }}>
+    <CartContext.Provider value={{ 
+      items, 
+      addItem, 
+      removeItem, 
+      updateQuantity, 
+      updateItem,
+      clearCart, 
+      total 
+    }}>
       {children}
     </CartContext.Provider>
   );

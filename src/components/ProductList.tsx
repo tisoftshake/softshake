@@ -170,23 +170,19 @@ export function ProductList({ products }: ProductListProps) {
     }
   };
 
-  const handleToppingsSelection = (selectedToppings: AcaiTopping[]) => {
+  const handleToppingsSelection = (selectedToppings: Array<{ id: string; name: string; price: number }>) => {
     if (selectedProduct) {
-      const toppingsPrice = selectedToppings.reduce(
-        (total, topping) => total + topping.price,
-        0
-      );
-      
       addItem({
         id: selectedProduct.id,
         name: selectedProduct.name,
-        price: selectedProduct.price + toppingsPrice,
+        price: selectedProduct.price,
         quantity: 1,
         toppings: selectedToppings,
         size: selectedProduct.size,
         image_url: selectedProduct.image_url
       });
       setShowToppingsModal(false);
+      setSelectedProduct(null);
     }
   };
 

@@ -19,7 +19,7 @@ interface AcaiToppingsModalProps {
     size?: '300ml' | '500ml' | '700ml';
   };
   toppings: AcaiTopping[];
-  onConfirm: (selectedToppings: string[]) => void;
+  onConfirm: (selectedToppings: { id: string; name: string; price: number }[]) => void;
 }
 
 export function AcaiToppingsModal({ isOpen, onClose, product, toppings, onConfirm }: AcaiToppingsModalProps) {
@@ -60,7 +60,17 @@ export function AcaiToppingsModal({ isOpen, onClose, product, toppings, onConfir
   };
 
   const handleConfirm = () => {
-    onConfirm(selectedToppings);
+    const selectedToppingsDetails = selectedToppings.map(toppingId => {
+      const topping = toppings.find(t => t.id === toppingId);
+      if (!topping) return null;
+      return {
+        id: topping.id,
+        name: topping.name,
+        price: topping.price
+      };
+    }).filter(Boolean);
+
+    onConfirm(selectedToppingsDetails);
     setSelectedToppings([]);
     onClose();
   };

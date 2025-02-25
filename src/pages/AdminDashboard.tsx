@@ -34,6 +34,11 @@ interface Order {
     flavors?: string[];
     filling?: string;
     deliveryDate?: Date;
+    toppings?: {
+      id: string;
+      name: string;
+      price: number;
+    }[];
   }[];
   total_amount: number;
   status: 'pending' | 'accepted' | 'preparing' | 'delivering' | 'completed';
@@ -82,23 +87,30 @@ function PrintLayout({ order }: { order: Order }) {
       <p className="my-2 font-bold text-lg">ITENS DO PEDIDO</p>
       <p className="text-base">================================</p>
 
-      {order.items.map((item, index) => (
-        <div key={index} className="mb-3">
-          <div className="flex justify-between text-base">
-            <span>{item.quantity}x {item.name}</span>
-            <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
-          </div>
-          {item.description && (
-            <p className="text-sm ml-4">{item.description}</p>
-          )}
-          {item.flavors && item.filling && (
-            <div className="text-sm ml-4">
-              <p>Sabores: {item.flavors.join(' + ')}</p>
-              <p>Recheio: {item.filling}</p>
+      <div className="mt-4 space-y-2">
+        {order.items.map((item, index) => (
+          <div key={index} className="flex justify-between">
+            <div>
+              <span>{item.quantity}x {item.name}
+                {item.toppings && item.toppings.length > 0 && (
+                  <span> ({item.toppings.map(t => t.name).join(', ')})</span>
+                )}
+              </span>
+              {item.flavors && (
+                <div className="text-sm">
+                  Sabores: {item.flavors.join(', ')}
+                </div>
+              )}
+              {item.filling && (
+                <div className="text-sm">
+                  Recheio: {item.filling}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      ))}
+            <span>R$ {((item.price + (item.toppings?.reduce((sum, t) => sum + t.price, 0) || 0)) * item.quantity).toFixed(2)}</span>
+          </div>
+        ))}
+      </div>
 
       <p className="text-base">================================</p>
       
@@ -246,36 +258,49 @@ function OrderDetailsModal({ order, onClose, onUpdateStatus }: OrderDetailsModal
               <h3 className="font-medium text-gray-900 mb-3">Itens do Pedido</h3>
               <div className="space-y-4">
                 {order.items.map((item, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-gray-900">{item.quantity}x {item.name}</p>
-                        {item.description && (
-                          <p className="text-gray-600 text-sm mt-1">{item.description}</p>
+                  <div key={index} className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <p className="font-medium">
+                        {item.name}
+                        {item.toppings && item.toppings.length > 0 && (
+                          <span className="font-normal text-gray-600">
+                            {" "}({item.toppings.map(t => t.name).join(', ')})
+                          </span>
                         )}
-                        {item.flavors && item.filling && (
-                          <div className="mt-2 space-y-1">
-                            <p className="text-gray-600 text-sm">
-                              <span className="font-medium">Sabores:</span> {item.flavors.join(' + ')}
-                            </p>
-                            <p className="text-gray-600 text-sm">
-                              <span className="font-medium">Recheio:</span> {item.filling}
-                            </p>
-                            {item.deliveryDate && (
-                              <p className="text-purple-600 text-sm font-medium mt-2 flex items-center">
-                                <Clock className="w-4 h-4 mr-1" />
-                                Entrega agendada: {new Date(item.deliveryDate).toLocaleDateString('pt-BR', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric'
-                                })}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <p className="font-medium text-gray-900">
-                        R$ {(item.price * item.quantity).toFixed(2)}
+                      </p>
+                      {item.flavors && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Sabores:</span> {item.flavors.join(', ')}
+                        </p>
+                      )}
+                      {item.filling && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Recheio:</span> {item.filling}
+                        </p>
+                      )}
+                      {item.toppings && item.toppings.length > 0 && (
+                        <div className="text-sm text-gray-600">
+                          <p className="font-medium">Adicionais:</p>
+                          <ul className="list-disc list-inside">
+                            {item.toppings.map((topping, idx) => (
+                              <li key={idx}>
+                                {topping.name} (+R$ {topping.price.toFixed(2)})
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">
+                        {item.quantity}x R$ {(
+                          (item.price + (item.toppings?.reduce((sum, t) => sum + t.price, 0) || 0))
+                        ).toFixed(2)}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Total: R$ {(
+                          (item.price + (item.toppings?.reduce((sum, t) => sum + t.price, 0) || 0)) * item.quantity
+                        ).toFixed(2)}
                       </p>
                     </div>
                   </div>

@@ -4,6 +4,7 @@ import DatePicker from 'react-datepicker';
 import { addDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import "react-datepicker/dist/react-datepicker.css";
+import { ScrollingText } from './ScrollingText';
 
 interface IceCreamCakeModalProps {
   isOpen: boolean;
@@ -165,13 +166,19 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
                       <button
                         key={flavor.id}
                         onClick={() => handleFlavorSelect(flavor.name)}
-                        className={`p-3 rounded-lg transition-all transform hover:scale-105 ${
-                          selectedFlavors.includes(flavor.name)
-                            ? 'bg-gradient-to-r from-purple-500 to-yellow-500 text-white shadow-lg'
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-                        }`}
+                        className={`p-3 rounded-xl border-2 text-sm sm:text-base transition-colors
+                          ${selectedFlavors.includes(flavor.name)
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-purple-200 hover:border-purple-300'
+                          }
+                          ${selectedFlavors.length >= 2 && !selectedFlavors.includes(flavor.name)
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                          }
+                        `}
+                        disabled={selectedFlavors.length >= 2 && !selectedFlavors.includes(flavor.name)}
                       >
-                        {flavor.name}
+                        <ScrollingText text={flavor.name} className="h-6" />
                       </button>
                     ))}
                   </div>
@@ -189,13 +196,14 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
                       <button
                         key={filling.id}
                         onClick={() => setSelectedFilling(filling.name)}
-                        className={`p-3 rounded-lg transition-all transform hover:scale-105 ${
-                          selectedFilling === filling.name
-                            ? 'bg-gradient-to-r from-purple-500 to-yellow-500 text-white shadow-lg'
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-                        }`}
+                        className={`p-3 rounded-xl border-2 text-sm sm:text-base transition-colors
+                          ${selectedFilling === filling.name
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-purple-200 hover:border-purple-300'
+                          }
+                        `}
                       >
-                        {filling.name}
+                        <ScrollingText text={filling.name} className="h-6" />
                       </button>
                     ))}
                   </div>
