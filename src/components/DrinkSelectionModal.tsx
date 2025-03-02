@@ -66,11 +66,11 @@ export function DrinkSelectionModal({
           </div>
 
           <div className="flex-1 overflow-y-auto pr-2 mb-6">
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-4">
               {variations.map((variation) => (
                 <label
                   key={variation.id}
-                  className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedVariation === variation.id
                       ? 'border-purple-500 bg-purple-50'
                       : 'border-gray-200 hover:border-purple-200'
@@ -82,17 +82,19 @@ export function DrinkSelectionModal({
                     checked={selectedVariation === variation.id}
                     onChange={() => variation.in_stock && setSelectedVariation(variation.id)}
                     disabled={!variation.in_stock}
-                    className="w-4 h-4 text-purple-500 focus:ring-purple-200"
+                    className="w-4 h-4 mt-1 text-purple-500 focus:ring-purple-200"
                   />
-                  <div className="flex-1 min-w-0 flex justify-between items-center">
-                    <span className="font-medium text-sm block truncate">{variation.name}</span>
-                    <span className="text-purple-500 font-semibold">
-                      R$ {variation.price.toFixed(2)}
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <span className="font-medium text-sm break-words">{variation.name}</span>
+                      <span className="text-purple-500 font-semibold whitespace-nowrap">
+                        R$ {variation.price.toFixed(2)}
+                      </span>
+                    </div>
+                    {!variation.in_stock && (
+                      <span className="text-xs text-red-500 block mt-1">Indisponível</span>
+                    )}
                   </div>
-                  {!variation.in_stock && (
-                    <span className="text-xs text-red-500">Indisponível</span>
-                  )}
                 </label>
               ))}
             </div>

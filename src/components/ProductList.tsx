@@ -348,15 +348,18 @@ export function ProductList({ products }: ProductListProps) {
             setShowIceCreamCakeModal(false);
             setSelectedProduct(null);
           }}
-          onConfirm={(selectedFlavors, selectedFilling, deliveryDate) => {
+          onConfirm={(selectedFlavors, selectedFilling, deliveryDate, customerName, customerPhone) => {
             console.log('Data recebida:', deliveryDate); // Debug
             const item = {
               id: selectedProduct.id,
               name: `${selectedProduct.name} (${selectedFlavors.join(' + ')}) - Recheio: ${selectedFilling}`,
               price: selectedProduct.price,
               quantity: 1,
-              flavors: selectedFlavors,
-              filling: selectedFilling,
+              flavor: selectedFlavors.join(' + '),
+              fillings: selectedFilling,
+              customerName,
+              customerPhone,
+              pickupDate: deliveryDate.toISOString().split('T')[0],
               image_url: selectedProduct.image_url,
               deliveryDate: deliveryDate.toISOString()
             };

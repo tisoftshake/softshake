@@ -32,26 +32,16 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     setIsSubmitting(true);
 
     try {
-      // Encontrar a data de entrega mais próxima dos bolos
-      const deliveryDate = items
-        .filter(item => item.deliveryDate)
-        .map(item => new Date(item.deliveryDate))
-        .sort((a, b) => a.getTime() - b.getTime())[0];
-
       const { data, error } = await supabase
         .from('orders')
-        .insert([
-          {
-            customer_name: form.name,
-            customer_phone: form.phone,
-            delivery_type: form.deliveryType,
-            delivery_address: form.address,
-            items: items,
-            total_amount: finalTotal,
-            status: 'pending',
-            delivery_date: deliveryDate?.toISOString().split('T')[0]
-          }
-        ])
+        .insert([{
+          customer_name: form.name,
+          customer_phone: form.phone,
+          delivery_type: form.deliveryType,
+          delivery_address: form.address,
+          items: items,
+          total_amount: finalTotal
+        }])
         .select();
 
       if (error) throw error;
@@ -136,12 +126,6 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                     {item.filling && (
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Recheio:</span> {item.filling}
-                      </p>
-                    )}
-                    {item.deliveryDate && (
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Data de Entrega:</span>{' '}
-                        {new Date(item.deliveryDate).toLocaleDateString('pt-BR')}
                       </p>
                     )}
                     <div className="flex items-center justify-between mt-2">
@@ -301,7 +285,7 @@ function PrintLayout({ order }: { order: any }) {
       <div className="text-center mb-4">
         <h1 className="text-3xl font-bold mb-2">SoftShake</h1>
         <p className="text-base">================================</p>
-        <p className="text-xl mt-2">PEDIDO #{order.id.slice(0, 8)}</p>
+        <p className="text-xl mt-2">PEDIDO #{order.id}</p>
         <p className="text-base">{new Date(order.created_at).toLocaleString('pt-BR')}</p>
       </div>
 
@@ -330,11 +314,11 @@ function PrintLayout({ order }: { order: any }) {
             <span>{item.quantity}x {item.name}</span>
             <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
           </div>
-          {item.flavors && item.filling && (
-            <div className="text-sm ml-4">
-              <p>Sabores: {item.flavors.join(' + ')}</p>
-              <p>Recheio: {item.filling}</p>
-            </div>
+          {item.flavors && (
+            <p className="text-sm ml-4">Sabores: {item.flavors.join(' + ')}</p>
+          )}
+          {item.toppings && item.toppings.length > 0 && (
+            <p className="text-sm ml-4">Adicionais: {item.toppings.map((t: any) => t.name).join(', ')}</p>
           )}
         </div>
       ))}
@@ -355,7 +339,7 @@ function PrintLayout({ order }: { order: any }) {
         <p className="text-base">================================</p>
         <div className="flex justify-between font-bold text-xl">
           <span>TOTAL:</span>
-          <span>R$ {(order.delivery_type === 'delivery' ? order.total_amount + DELIVERY_FEE : order.total_amount).toFixed(2)}</span>
+          <span>R$ {order.total_amount.toFixed(2)}</span>
         </div>
       </div>
 

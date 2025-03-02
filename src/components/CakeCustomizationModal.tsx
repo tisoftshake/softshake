@@ -48,7 +48,8 @@ export function CakeCustomizationModal({
 
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 3);
-  const minDateString = minDate.toISOString().split('T')[0];
+  // Ajustamos para o fuso horário local
+  const minDateString = new Date(minDate.getTime() - (minDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
   const handleFlavorSelect = (flavorId: string) => {
     setSelectedFlavor(flavorId);
@@ -196,7 +197,7 @@ export function CakeCustomizationModal({
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-yellow-700">
-                  O prazo mínimo para retirada é de 3 dias úteis a partir da data do pedido.
+                  O prazo mínimo para retirada é de 3 dias a partir da data do pedido.
                 </p>
               </div>
 

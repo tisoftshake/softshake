@@ -9,7 +9,7 @@ import { ScrollingText } from './ScrollingText';
 interface IceCreamCakeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (selectedFlavors: string[], selectedFilling: string, deliveryDate: Date) => void;
+  onConfirm: (selectedFlavors: string[], selectedFilling: string, deliveryDate: Date, customerName: string, customerPhone: string) => void;
 }
 
 interface Flavor {
@@ -28,6 +28,8 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([]);
   const [selectedFilling, setSelectedFilling] = useState<string>('');
   const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
@@ -86,8 +88,16 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
       setError('Por favor, selecione uma data de entrega!');
       return;
     }
+    if (!customerName.trim()) {
+      setError('Por favor, informe o nome do cliente!');
+      return;
+    }
+    if (!customerPhone.trim()) {
+      setError('Por favor, informe o telefone do cliente!');
+      return;
+    }
     console.log('Data selecionada:', deliveryDate); // Debug
-    onConfirm(selectedFlavors, selectedFilling, deliveryDate);
+    onConfirm(selectedFlavors, selectedFilling, deliveryDate, customerName, customerPhone);
     resetForm();
     onClose();
   }
@@ -96,6 +106,8 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
     setSelectedFlavors([]);
     setSelectedFilling('');
     setDeliveryDate(null);
+    setCustomerName('');
+    setCustomerPhone('');
     setError('');
     setCurrentStep(1);
   }
@@ -107,6 +119,10 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
     }
     if (currentStep === 2 && !selectedFilling) {
       setError('Por favor, selecione um recheio!');
+      return;
+    }
+    if (currentStep === 3 && !deliveryDate) {
+      setError('Por favor, selecione uma data de entrega!');
       return;
     }
     setError('');
@@ -145,7 +161,7 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
           <div className="w-full h-2 bg-gray-200 rounded-full mb-8">
             <div 
               className="h-full bg-gradient-to-r from-purple-500 to-yellow-500 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / 3) * 100}%` }}
+              style={{ width: `${(currentStep / 4) * 100}%` }}
             />
           </div>
 
@@ -216,22 +232,51 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
                   <h3 className="text-xl font-semibold text-gray-800">
                     3. Escolha a Data de Entrega
                   </h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-amber-600 mb-4 flex items-center">
-                      <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Pedidos devem ser feitos com no mínimo 3 dias de antecedência
-                    </div>
+                  <div className="w-full">
                     <DatePicker
                       selected={deliveryDate}
-                      onChange={(date) => setDeliveryDate(date)}
+                      onChange={(date: Date) => setDeliveryDate(date)}
                       minDate={minDate}
                       dateFormat="dd/MM/yyyy"
                       locale={ptBR}
                       placeholderText="Selecione a data de entrega"
-                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full p-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Customer Info */}
+              {currentStep === 4 && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    4. Informações do Cliente
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nome do Cliente
+                      </label>
+                      <input
+                        type="text"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="w-full p-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                        placeholder="Digite o nome do cliente"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Telefone
+                      </label>
+                      <input
+                        type="tel"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="w-full p-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                        placeholder="Digite o telefone do cliente"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -254,7 +299,7 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
                   <div></div>
                 )}
                 
-                {currentStep < 3 ? (
+                {currentStep < 4 ? (
                   <button
                     onClick={nextStep}
                     className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-yellow-500 text-white hover:from-purple-600 hover:to-yellow-600 transition-colors"

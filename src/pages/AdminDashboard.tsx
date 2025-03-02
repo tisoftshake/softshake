@@ -55,9 +55,8 @@ interface OrderDetailsModalProps {
 // Componente para o layout de impressão
 function PrintLayout({ order }: { order: Order }) {
   const DELIVERY_FEE = 2;
-  const finalAmount = order.delivery_type === 'delivery' 
-    ? order.total_amount + DELIVERY_FEE 
-    : order.total_amount;
+  // Não adiciona a taxa novamente pois já está incluída no total_amount
+  const finalAmount = order.total_amount;
 
   return (
     <div className="print-layout hidden print:block">
@@ -77,8 +76,8 @@ function PrintLayout({ order }: { order: Order }) {
           <p className="text-base">End: {order.delivery_address}</p>
         )}
         {order.delivery_date && (
-          <p className="text-base font-medium text-purple-700">
-            *** Data de Entrega: {new Date(order.delivery_date).toLocaleDateString('pt-BR')} ***
+          <p className="text-base font-bold text-2xl border-2 border-purple-700 p-2 mt-2 text-center">
+            DATA DE ENTREGA: {new Date(order.delivery_date).toLocaleDateString('pt-BR')}
           </p>
         )}
       </div>
@@ -117,7 +116,7 @@ function PrintLayout({ order }: { order: Order }) {
       <div className="mt-2">
         <div className="flex justify-between text-base">
           <span>Subtotal:</span>
-          <span>R$ {order.total_amount.toFixed(2)}</span>
+          <span>R$ {(order.delivery_type === 'delivery' ? order.total_amount - DELIVERY_FEE : order.total_amount).toFixed(2)}</span>
         </div>
         {order.delivery_type === 'delivery' && (
           <div className="flex justify-between text-base">
@@ -146,9 +145,8 @@ function OrderDetailsModal({ order, onClose, onUpdateStatus }: OrderDetailsModal
   if (!order) return null;
 
   const DELIVERY_FEE = 2;
-  const finalAmount = order.delivery_type === 'delivery' 
-    ? order.total_amount + DELIVERY_FEE 
-    : order.total_amount;
+  // Não adiciona a taxa novamente pois já está incluída no total_amount
+  const finalAmount = order.total_amount;
 
   const handlePrint = () => {
     window.print();
@@ -312,7 +310,7 @@ function OrderDetailsModal({ order, onClose, onUpdateStatus }: OrderDetailsModal
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-gray-600">
                   <span>Subtotal:</span>
-                  <span>R$ {order.total_amount.toFixed(2)}</span>
+                  <span>R$ {(order.delivery_type === 'delivery' ? order.total_amount - DELIVERY_FEE : order.total_amount).toFixed(2)}</span>
                 </div>
                 {order.delivery_type === 'delivery' && (
                   <div className="flex justify-between items-center text-gray-600">
@@ -388,14 +386,16 @@ export function AdminDashboard() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'orders'
         },
         (payload) => {
-          // Notify about new order
-          notifyNewOrder();
-          // Reload orders
+          // Notify about new order or updates
+          if (payload.eventType === 'INSERT') {
+            notifyNewOrder();
+          }
+          // Reload orders for both INSERT and UPDATE
           fetchOrders();
         }
       )

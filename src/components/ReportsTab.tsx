@@ -48,47 +48,34 @@ export function ReportsTab() {
       endOfMonth.setDate(0);
       endOfMonth.setHours(23, 59, 59, 999);
 
-      // Buscar o relatório existente do mês atual
-      const { data: existingReport } = await supabase
-        .from('sales_reports')
-        .select('*')
-        .eq('month', startOfMonth.toLocaleString('pt-BR', { month: 'long' }))
-        .eq('year', startOfMonth.getFullYear())
-        .single();
-
-      // Buscar pedidos novos do mês atual
-      const { data: currentOrders, error: ordersError } = await supabase
+      // Buscar pedidos da tabela deleted_orders do mês atual
+      const { data: deletedOrders, error: deletedOrdersError } = await supabase
         .from('deleted_orders')
         .select('*')
         .gte('created_at', startOfMonth.toISOString())
         .lte('created_at', endOfMonth.toISOString());
 
-      if (ordersError) throw ordersError;
+      if (deletedOrdersError) throw deletedOrdersError;
 
-      // Preparar a lista de pedidos
-      let allOrders = [];
-      
-      // Se já existe um relatório, começamos com os pedidos salvos nele
-      if (existingReport?.report_data?.orders) {
-        allOrders = [...existingReport.report_data.orders];
-      }
+      // Buscar pedidos da tabela orders do mês atual
+      const { data: activeOrders, error: activeOrdersError } = await supabase
+        .from('orders')
+        .select('*')
+        .gte('created_at', startOfMonth.toISOString())
+        .lte('created_at', endOfMonth.toISOString());
 
-      // Adicionar novos pedidos que ainda não estão no relatório
-      if (currentOrders) {
-        for (const newOrder of currentOrders) {
-          // Verifica se o pedido já existe no relatório
-          const orderExists = allOrders.some(order => order.id === newOrder.id);
-          
-          if (!orderExists) {
-            // Se não existe, adiciona à lista
-            allOrders.push(newOrder);
-          }
-        }
-      }
+      if (activeOrdersError) throw activeOrdersError;
+
+      // Combinar pedidos das duas tabelas
+      const allOrders = [
+        ...(deletedOrders || []),
+        ...(activeOrders || [])
+      ];
 
       // Calcular totais usando todos os pedidos
       const totalSales = allOrders.reduce((sum, order) => sum + order.total_amount, 0);
       const totalOrders = allOrders.length;
+      const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
 
       // Criar ou atualizar o relatório
       const { data: reportData, error: reportError } = await supabase
@@ -103,7 +90,7 @@ export function ReportsTab() {
             summary: {
               totalSales,
               totalOrders,
-              averageOrderValue: totalOrders > 0 ? totalSales / totalOrders : 0,
+              averageOrderValue,
               lastUpdated: new Date().toISOString()
             }
           }
@@ -115,6 +102,7 @@ export function ReportsTab() {
       setCurrentReport(reportData);
     } catch (err: any) {
       setError(err.message);
+      console.error('Erro ao gerar relatório:', err);
     } finally {
       setLoading(false);
     }

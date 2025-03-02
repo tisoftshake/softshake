@@ -117,11 +117,11 @@ export function AcaiToppingsModal({ isOpen, onClose, product, toppings, onConfir
           </div>
 
           <div className="flex-1 overflow-y-auto pr-2 mb-6">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {toppings.map((topping) => (
                 <label
                   key={topping.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                  className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedToppings.includes(topping.id)
                       ? 'border-purple-500 bg-purple-50'
                       : 'border-gray-200 hover:border-purple-200'
@@ -136,15 +136,15 @@ export function AcaiToppingsModal({ isOpen, onClose, product, toppings, onConfir
                     checked={selectedToppings.includes(topping.id)}
                     onChange={() => topping.in_stock && handleToggleTopping(topping.id)}
                     disabled={!topping.in_stock || (selectedToppings.length >= toppingsLimit && !selectedToppings.includes(topping.id))}
-                    className="w-4 h-4 rounded text-purple-500 focus:ring-purple-200"
+                    className="w-4 h-4 mt-1 rounded text-purple-500 focus:ring-purple-200"
                   />
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium text-sm block truncate">{topping.name}</span>
+                  <div className="flex-1">
+                    <span className="font-medium text-sm block break-words">{topping.name}</span>
                     {topping.price > 0 && (
-                      <span className="text-xs text-purple-500">+ R$ {topping.price.toFixed(2)}</span>
+                      <span className="text-xs text-purple-500 block mt-1">+ R$ {topping.price.toFixed(2)}</span>
                     )}
                     {!topping.in_stock && (
-                      <span className="text-xs text-red-500">Indisponível</span>
+                      <span className="text-xs text-red-500 block mt-1">Indisponível</span>
                     )}
                   </div>
                 </label>
