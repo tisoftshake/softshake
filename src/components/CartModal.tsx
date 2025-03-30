@@ -120,7 +120,7 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                     </h3>
                     {item.flavors && (
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Sabores:</span> {item.flavors.join(', ')}
+                        <span className="font-medium">Sabores:</span> {item.flavors.map(f => f.name).join(', ')}
                       </p>
                     )}
                     {item.filling && (
@@ -148,10 +148,10 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="font-medium">
-                            {item.quantity}x R$ {(item.price + (item.toppings?.reduce((sum, t) => sum + t.price, 0) || 0)).toFixed(2)}
+                            R$ {item.price.toFixed(2)}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Total: R$ {((item.price + (item.toppings?.reduce((sum, t) => sum + t.price, 0) || 0)) * item.quantity).toFixed(2)}
+                            Total: R$ {(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                         <button
@@ -315,7 +315,7 @@ function PrintLayout({ order }: { order: any }) {
             <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
           </div>
           {item.flavors && (
-            <p className="text-sm ml-4">Sabores: {item.flavors.join(' + ')}</p>
+            <p className="text-sm ml-4">Sabores: {item.flavors.map(f => f.name).join(' + ')}</p>
           )}
           {item.toppings && item.toppings.length > 0 && (
             <p className="text-sm ml-4">Adicionais: {item.toppings.map((t: any) => t.name).join(', ')}</p>

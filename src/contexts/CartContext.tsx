@@ -6,7 +6,7 @@ interface CartItem {
   price: number;
   quantity: number;
   image_url: string;
-  flavors?: string[];
+  flavors?: Array<{ id: string; name: string }>;
   filling?: string;
   deliveryDate?: string;
   toppings?: Array<{
@@ -39,13 +39,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems(currentItems => {
       const existingItem = currentItems.find(item => 
         item.id === product.id && 
-        JSON.stringify(item.toppings) === JSON.stringify(product.toppings)
+        JSON.stringify(item.toppings) === JSON.stringify(product.toppings) &&
+        JSON.stringify(item.flavors) === JSON.stringify(product.flavors)
       );
       
       if (existingItem) {
         return currentItems.map(item =>
           item.id === product.id && 
-          JSON.stringify(item.toppings) === JSON.stringify(product.toppings)
+          JSON.stringify(item.toppings) === JSON.stringify(product.toppings) &&
+          JSON.stringify(item.flavors) === JSON.stringify(product.flavors)
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );

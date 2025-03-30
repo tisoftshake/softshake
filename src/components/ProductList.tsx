@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { AlertCircle, ShoppingCart } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
-import { FlavorSelectionModal } from './FlavorSelectionModal';
+import { FlavorSelectionModal } from './FlavorSectionModal';
 import { AcaiToppingsModal } from './AcaiToppingsModal';
 import { CakeCustomizationModal } from './CakeCustomizationModal';
 import { DrinkSelectionModal } from './DrinkSelectionModal';
 import { IceCreamCakeModal } from './IceCreamCakeModal';
+import { IceCreamPotModal } from './IceCreamPotModal';
+import { IceCreamBucketModal } from './IceCreamBucketModal';
 
 interface Product {
   id: string;
@@ -74,6 +76,8 @@ export function ProductList({ products }: ProductListProps) {
   const [showToppingsModal, setShowToppingsModal] = useState(false);
   const [showCakeModal, setShowCakeModal] = useState(false);
   const [showIceCreamCakeModal, setShowIceCreamCakeModal] = useState(false);
+  const [showIceCreamPotModal, setShowIceCreamPotModal] = useState(false);
+  const [showIceCreamBucketModal, setShowIceCreamBucketModal] = useState(false);
   const [iceCreamFlavors, setIceCreamFlavors] = useState<IceCreamFlavor[]>([]);
   const [iceCreamFillings, setIceCreamFillings] = useState<IceCreamFilling[]>([]);
 
@@ -128,21 +132,29 @@ export function ProductList({ products }: ProductListProps) {
       setCakeFlavors(cakeData || []);
       setShowCakeModal(true);
     } else if (product.name.toLowerCase().includes('sorvete')) {
-      // Load ice cream flavors and fillings
-      const [flavorsResponse, fillingsResponse] = await Promise.all([
-        supabase
-          .from('ice_cream_flavors')
-          .select('id, name, in_stock')
-          .order('name'),
-        supabase
-          .from('ice_cream_fillings')
-          .select('id, name, in_stock')
-          .order('name')
-      ]);
-      
-      setIceCreamFlavors(flavorsResponse.data || []);
-      setIceCreamFillings(fillingsResponse.data || []);
-      setShowIceCreamCakeModal(true);
+      if (product.name.toLowerCase().includes('bolo')) {
+        // Load ice cream flavors and fillings for cake
+        const [flavorsResponse, fillingsResponse] = await Promise.all([
+          supabase
+            .from('ice_cream_flavors')
+            .select('id, name, in_stock')
+            .order('name'),
+          supabase
+            .from('ice_cream_fillings')
+            .select('id, name, in_stock')
+            .order('name')
+        ]);
+        
+        setIceCreamFlavors(flavorsResponse.data || []);
+        setIceCreamFillings(fillingsResponse.data || []);
+        setShowIceCreamCakeModal(true);
+      } else if (product.name.toLowerCase().includes('balde')) {
+        // For ice cream buckets, show the bucket modal
+        setShowIceCreamBucketModal(true);
+      } else {
+        // For ice cream pots, show the pot modal
+        setShowIceCreamPotModal(true);
+      }
     } else {
       // Load regular flavors
       const { data: flavorsData } = await supabase
@@ -158,15 +170,22 @@ export function ProductList({ products }: ProductListProps) {
 
   const handleFlavorSelection = (selectedFlavors: string[]) => {
     if (selectedProduct) {
+      const selectedFlavorNames = flavors
+        .filter(f => selectedFlavors.includes(f.id))
+        .map(f => f.name)
+        .join(' + ');
+
       addItem({
         id: selectedProduct.id,
-        name: selectedProduct.name,
+        name: `${selectedProduct.name} - ${selectedFlavorNames}`,
         price: selectedProduct.price,
         quantity: 1,
         flavors: selectedFlavors,
+        flavor: selectedFlavorNames,
         image_url: selectedProduct.image_url
       });
       setShowFlavorModal(false);
+      setSelectedProduct(null);
     }
   };
 
@@ -348,7 +367,7 @@ export function ProductList({ products }: ProductListProps) {
             setShowIceCreamCakeModal(false);
             setSelectedProduct(null);
           }}
-          onConfirm={(selectedFlavors, selectedFilling, deliveryDate, customerName, customerPhone) => {
+          onConfirm={(selectedFlavors, selectedFilling, deliveryDate) => {
             console.log('Data recebida:', deliveryDate); // Debug
             const item = {
               id: selectedProduct.id,
@@ -357,8 +376,6 @@ export function ProductList({ products }: ProductListProps) {
               quantity: 1,
               flavor: selectedFlavors.join(' + '),
               fillings: selectedFilling,
-              customerName,
-              customerPhone,
               pickupDate: deliveryDate.toISOString().split('T')[0],
               image_url: selectedProduct.image_url,
               deliveryDate: deliveryDate.toISOString()
@@ -366,6 +383,50 @@ export function ProductList({ products }: ProductListProps) {
             console.log('Item a ser adicionado:', item); // Debug
             addItem(item);
             setShowIceCreamCakeModal(false);
+          }}
+        />
+      )}
+
+      {selectedProduct && showIceCreamPotModal && (
+        <IceCreamPotModal
+          isOpen={true}
+          onClose={() => {
+            setShowIceCreamPotModal(false);
+            setSelectedProduct(null);
+          }}
+          productId={selectedProduct.id}
+          price={selectedProduct.price}
+          onConfirm={(variationId, variationName, price) => {
+            addItem({
+              id: selectedProduct.id,
+              name: `${selectedProduct.name} - ${variationName}`,
+              price: selectedProduct.price,
+              quantity: 1,
+              variation: variationName,
+              image_url: selectedProduct.image_url
+            });
+            setShowIceCreamPotModal(false);
+          }}
+        />
+      )}
+
+      {selectedProduct && showIceCreamBucketModal && (
+        <IceCreamBucketModal
+          isOpen={true}
+          onClose={() => {
+            setShowIceCreamBucketModal(false);
+            setSelectedProduct(null);
+          }}
+          onConfirm={(flavorId, flavorName, price) => {
+            addItem({
+              id: selectedProduct.id,
+              name: `${selectedProduct.name} - ${flavorName}`,
+              price: price,
+              quantity: 1,
+              flavor: flavorName,
+              image_url: selectedProduct.image_url
+            });
+            setShowIceCreamBucketModal(false);
           }}
         />
       )}

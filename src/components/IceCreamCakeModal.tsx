@@ -9,7 +9,7 @@ import { ScrollingText } from './ScrollingText';
 interface IceCreamCakeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (selectedFlavors: string[], selectedFilling: string, deliveryDate: Date, customerName: string, customerPhone: string) => void;
+  onConfirm: (selectedFlavors: string[], selectedFilling: string, deliveryDate: Date) => void;
 }
 
 interface Flavor {
@@ -28,8 +28,7 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([]);
   const [selectedFilling, setSelectedFilling] = useState<string>('');
   const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
@@ -88,16 +87,9 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
       setError('Por favor, selecione uma data de entrega!');
       return;
     }
-    if (!customerName.trim()) {
-      setError('Por favor, informe o nome do cliente!');
-      return;
-    }
-    if (!customerPhone.trim()) {
-      setError('Por favor, informe o telefone do cliente!');
-      return;
-    }
+
     console.log('Data selecionada:', deliveryDate); // Debug
-    onConfirm(selectedFlavors, selectedFilling, deliveryDate, customerName, customerPhone);
+    onConfirm(selectedFlavors, selectedFilling, deliveryDate);
     resetForm();
     onClose();
   }
@@ -106,8 +98,7 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
     setSelectedFlavors([]);
     setSelectedFilling('');
     setDeliveryDate(null);
-    setCustomerName('');
-    setCustomerPhone('');
+
     setError('');
     setCurrentStep(1);
   }
@@ -232,54 +223,55 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
                   <h3 className="text-xl font-semibold text-gray-800">
                     3. Escolha a Data de Entrega
                   </h3>
-                  <div className="w-full">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+                    <svg
+                      className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    <p className="text-sm text-yellow-700">
+                      O prazo mínimo para retirada é de 3 dias a partir da data do pedido.
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl border-2 border-purple-200">
                     <DatePicker
                       selected={deliveryDate}
-                      onChange={(date: Date) => setDeliveryDate(date)}
+                      onChange={(date) => setDeliveryDate(date)}
                       minDate={minDate}
                       dateFormat="dd/MM/yyyy"
                       locale={ptBR}
                       placeholderText="Selecione a data de entrega"
-                      className="w-full p-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                      className="w-full rounded-lg border-gray-300 p-2 focus:border-purple-500 focus:ring-purple-200"
                     />
                   </div>
+                  {deliveryDate && (
+                    <div className="bg-purple-50 p-4 rounded-xl space-y-2">
+                      <p className="font-medium">Sabores selecionados:</p>
+                      <ul className="list-disc list-inside text-gray-700">
+                        {selectedFlavors.map((flavor, index) => (
+                          <li key={index}>{flavor}</li>
+                        ))}
+                      </ul>
+                      <p className="font-medium mt-4">Recheio:</p>
+                      <p className="text-gray-700">{selectedFilling}</p>
+                      <p className="font-medium mt-4">Data de Entrega:</p>
+                      <p className="text-gray-700">
+                        {deliveryDate.toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Step 4: Customer Info */}
-              {currentStep === 4 && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    4. Informações do Cliente
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nome do Cliente
-                      </label>
-                      <input
-                        type="text"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="w-full p-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
-                        placeholder="Digite o nome do cliente"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Telefone
-                      </label>
-                      <input
-                        type="tel"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full p-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
-                        placeholder="Digite o telefone do cliente"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {error && (
                 <div className="p-3 rounded-lg bg-red-50 text-red-600 text-center">
@@ -287,31 +279,32 @@ export function IceCreamCakeModal({ isOpen, onClose, onConfirm }: IceCreamCakeMo
                 </div>
               )}
 
-              <div className="flex justify-between pt-4">
-                {currentStep > 1 ? (
+              {/* Navigation buttons */}
+              <div className="flex justify-between items-center border-t pt-4">
+                {currentStep > 1 && (
                   <button
                     onClick={prevStep}
-                    className="px-6 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors"
+                    className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                   >
                     Voltar
                   </button>
-                ) : (
-                  <div></div>
                 )}
-                
-                {currentStep < 4 ? (
-                  <button
-                    onClick={nextStep}
-                    className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-yellow-500 text-white hover:from-purple-600 hover:to-yellow-600 transition-colors"
-                  >
-                    Próximo
-                  </button>
-                ) : (
+                {currentStep === 3 && deliveryDate && (
                   <button
                     onClick={handleSubmit}
-                    className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-yellow-500 text-white hover:from-purple-600 hover:to-yellow-600 transition-colors"
+                    disabled={loading}
+                    className="px-6 py-2 rounded-lg font-medium bg-gradient-to-r from-purple-500 to-yellow-500 text-white hover:opacity-90 transition-all ml-auto"
                   >
                     Confirmar
+                  </button>
+                )}
+                {currentStep < 3 && (
+                  <button
+                    onClick={nextStep}
+                    disabled={loading}
+                    className="px-6 py-2 rounded-lg font-medium bg-gradient-to-r from-purple-500 to-yellow-500 text-white hover:opacity-90 transition-all ml-auto"
+                  >
+                    Próximo
                   </button>
                 )}
               </div>

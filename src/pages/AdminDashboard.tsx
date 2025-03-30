@@ -80,6 +80,11 @@ function PrintLayout({ order }: { order: Order }) {
             DATA DE ENTREGA: {new Date(order.delivery_date).toLocaleDateString('pt-BR')}
           </p>
         )}
+        {order.items.some(item => item.deliveryDate) && (
+          <p className="text-base font-bold text-2xl border-2 border-purple-700 p-2 mt-2 text-center">
+            DATA DE ENTREGA DO BOLO DE SORVETE: {new Date(order.items.find(item => item.deliveryDate)?.deliveryDate || '').toLocaleDateString('pt-BR')}
+          </p>
+        )}
       </div>
 
       <p className="text-base">================================</p>
