@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Minus, Plus, ShoppingBag, Truck, Store } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag, Truck, Store, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -103,72 +103,59 @@ export function CartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <>
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {items.map(item => (
-                <div key={item.id} className="flex gap-4 py-4 border-b">
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-medium">
-                      {item.name}
-                      {item.toppings && item.toppings.length > 0 && (
-                        <span className="font-normal text-gray-600">
-                          {" "}({item.toppings.map(t => t.name).join(', ')})
-                        </span>
-                      )}
-                    </h3>
-                    {item.flavors && (
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Sabores:</span> {item.flavors.map(f => f.name).join(', ')}
-                      </p>
-                    )}
-                    {item.filling && (
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Recheio:</span> {item.filling}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                          disabled={item.quantity <= 1}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="w-8 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="font-medium">
-                            R$ {item.price.toFixed(2)}
+                <div key={item.id} className="flex justify-between border-b pb-4">
+                  <div className="flex flex-col w-full">
+                    <div className="flex">
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                      <div className="ml-4">
+                        <h3 className="font-medium">
+                          {item.name}
+                          {item.toppings && (
+                            <span className="text-gray-600">
+                              {" "}({item.toppings.map(t => t.name).join(', ')})
+                            </span>
+                          )}
+                        </h3>
+                        {item.flavors && (
+                          <p className="text-gray-600">
+                            <span className="font-medium">Sabores:</span> {item.flavors.map(f => f.name).join(', ')}
                           </p>
-                          <p className="text-sm text-gray-600">
-                            Total: R$ {(item.price * item.quantity).toFixed(2)}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => removeItem(item.id)}
-                          className="p-1 hover:bg-gray-100 rounded-full transition-colors text-red-500"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        )}
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-4 justify-center">
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                        disabled={item.quantity <= 1}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="p-2 hover:bg-red-50 rounded-full transition-colors text-red-500"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
 
-            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6 border-t bg-gradient-to-r from-purple-50 to-yellow-50">
-              <div className="grid grid-cols-2 gap-4 sm:gap-6">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gradient-to-r from-purple-50 to-yellow-50">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Nome

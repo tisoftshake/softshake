@@ -244,7 +244,7 @@ export function ProductList({ products }: ProductListProps) {
               <img 
                 src={product.image_url} 
                 alt={product.name}
-                className="w-full h-48 sm:h-56 object-cover"
+                className="w-full h-52 sm:h-60 object-cover"
               />
               <div className="absolute top-3 right-3">
                 <div className={`px-2 py-1 rounded-full text-xs font-medium ${
